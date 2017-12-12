@@ -1,0 +1,138 @@
+import java.io.*;
+import java.util.*;
+
+public class ScrapPaper {
+	
+	private File inputFile;
+	private ArrayList<String> testBank;
+	private Set<String> usedWords = new HashSet<>();
+	private char[] abcd = {'a', 'b', 'c', 'd'};
+	private Random rand = new Random();
+	private int correctChoice;
+	private int score;
+	
+	public ScrapPaper(File inputFile) {
+		this.inputFile = inputFile;
+	}
+	
+	//Generates the quiz given the input file and testbank.txt
+	public void makeQuiz() throws FileNotFoundException {
+		Scanner in = new Scanner(inputFile);
+		PrintWriter out = new PrintWriter("testBank.txt");
+		testBank = new ArrayList<String>();
+		
+		int qNumber = 1;
+		score = 0;
+		
+		//adds words to the test bank
+		while (in.hasNextLine()) {
+			String line = in.nextLine();
+			testBank.add(line);
+			out.println(qNumber + ". " + line);
+			qNumber++;
+		}
+		
+		in.close();
+		out.close();
+		
+		//reset question number to output with question
+		int totalWords = qNumber;
+		qNumber = 1;
+		
+		Scanner sc = new Scanner(System.in);
+		
+		System.out.println("How many questions would you like? Number must be between 1 and " + totalWords + ".");
+		int totalQs = sc.nextInt();
+		while (totalQs > totalWords || totalQs < 1) {
+			System.out.println("Your request is invalid. Enter a number between 1 and " + totalWords + ".");
+			totalQs = sc.nextInt();
+		}
+		
+		for (int i = 0; i < totalQs; i++) {
+			//Gets random index in testBank
+			int wordIndex = rand.nextInt(totalQs);
+			
+			//Checks to see if word has been used before
+			//Generates new index if word appears in the set usedWords
+			while (!usedWords.add(testBank.get(wordIndex))) {
+				wordIndex = rand.nextInt(totalQs);
+			}
+			
+			//Gets the whole word
+			String wholeWord = testBank.get(wordIndex);
+			usedWords.add(testBank.get(wordIndex));
+			
+			//split up by word and definition 
+			String word = wholeWord.substring(0, wholeWord.indexOf("-"));
+			String definition = wholeWord.substring(wholeWord.indexOf("-")+2).replace(":", "");
+			
+			System.out.print(qNumber + ". ");
+			makeQuestion(wholeWord, word, definition, wordIndex);
+			qNumber++;
+			
+			String input = sc.nextLine();
+			
+			//checks choice letter bound (a-d)
+			while (!input.equals("a") && !input.equals("b") && !input.equals("c") && !input.equals("d")) {
+				System.out.println("Sorry, your answer is invalid. Try again and only enter the letter.");
+				input = sc.nextLine();
+			}
+			
+			input = input.toLowerCase();
+			
+			//Checks if the answer is correct, then increments the score accordingly
+			if (input.equals(Character.toString(abcd[correctChoice]))) {
+				System.out.println("That's correct!");
+				score++;
+				
+			} 
+			else {
+				System.out.println("Sorry, the correct answer choice is " + abcd[correctChoice] + ".");
+			}
+			
+			System.out.println("Press Enter/Return to continue");
+			sc.nextLine();
+		}
+		
+		//outputs score and statistics to the user
+		System.out.println("You got " + score + " out of " + totalQs + " questions. ");
+		double percentage = (score * 1.0 / totalQs) * 100;
+		System.out.printf("You scored %.2f%% \n ", percentage);
+		sc.close();
+	}
+	
+	//Generates a question
+	public void makeQuestion(String wholeWord, String word, String definition, int wordIndex) {
+		//Creates a 2-D array and places definition and String "correct" at random index
+		String[][] choices = new String[4][2];
+		correctChoice = rand.nextInt(4);
+		choices[correctChoice][0] = definition;
+		choices[correctChoice][1] = "correct";
+		testBank.remove(wordIndex);
+		
+		int index = 0;
+		
+		//Shuffles the testBank
+		Collections.shuffle(testBank);
+		
+		//Adds the rest of the definitions into array and String "wrong"
+		for (int i = 0; i < 3; i++) {
+			if (choices[index][0] != null) index++;
+			String word1 = testBank.get(i);
+			String choice = word1.substring(word1.indexOf("-")+2).replace(":", "");
+			choices[index][0] = choice;
+			choices[index][1] = "wrong";
+			index++;
+		}
+		
+		//Prints out question and answer choices;
+		System.out.println("Define " + word);
+		for (int i = 0; i < 4; i++) {
+			System.out.println(abcd[i] + ". " + choices[i][0]);
+		}
+		
+		testBank.add(wholeWord);
+		
+		System.out.println("What is your answer? Enter only the letter.");
+	}
+}
